@@ -174,38 +174,46 @@ namespace NeuralNetwork
             public enum ActivationType { None, Sigmoid, Tanh, ReLU, SoftPlus, ArcTan }
             float Activation(float x)
             {
-                switch (Function)
-                {
-                    case ActivationType.Sigmoid:
-                        return Sigmoid(x);
-                    case ActivationType.Tanh:
-                        return Tanh(x);
-                    case ActivationType.ReLU:
-                        return ReLU(x);
-                    case ActivationType.SoftPlus:
-                        return SoftPlus(x);
-                    case ActivationType.ArcTan:
-                        return ArcTan(x);
-                }
-                return x;
+                if (Function == ActivationType.None) return x;
+                afunc ??= this.GetType().GetMethod($"{Function}");
+                return (float)afunc.Invoke(this, new object[] { x });
+
+                // switch (Function)
+                // {
+                //     case ActivationType.Sigmoid:
+                //         return Sigmoid(x);
+                //     case ActivationType.Tanh:
+                //         return Tanh(x);
+                //     case ActivationType.ReLU:
+                //         return ReLU(x);
+                //     case ActivationType.SoftPlus:
+                //         return SoftPlus(x);
+                //     case ActivationType.ArcTan:
+                //         return ArcTan(x);
+                // }
+                // return x;
             }
 
             float dActivation(float x)
             {
-                switch (Function)
-                {
-                    case ActivationType.Sigmoid:
-                        return dSigmoid(x);
-                    case ActivationType.Tanh:
-                        return dTanh(x);
-                    case ActivationType.ReLU:
-                        return dReLU(x);
-                    case ActivationType.SoftPlus:
-                        return dSoftPlus(x);
-                    case ActivationType.ArcTan:
-                        return dArcTan(x);
-                }
-                return 1;
+                if (Function == ActivationType.None) return 1;
+                dfunc ??= this.GetType().GetMethod($"d{Function}");
+                return (float)dfunc.Invoke(this, new object[] { x });
+
+                // switch (Function)
+                // {
+                //     case ActivationType.Sigmoid:
+                //         return dSigmoid(x);
+                //     case ActivationType.Tanh:
+                //         return dTanh(x);
+                //     case ActivationType.ReLU:
+                //         return dReLU(x);
+                //     case ActivationType.SoftPlus:
+                //         return dSoftPlus(x);
+                //     case ActivationType.ArcTan:
+                //         return dArcTan(x);
+                // }
+                // return 1;
             }
 
             static float ReLU(float x) => x <= 0f ? 0.01f * x : x;
