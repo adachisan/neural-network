@@ -3,7 +3,7 @@ namespace NeuralNetwork
     using System.Text;
     using System.Text.Json;
     using static Network.Neuron;
-
+    
     public class Network
     {
         public Neuron[][] Hidden { get; set; }
@@ -13,7 +13,7 @@ namespace NeuralNetwork
         List<(float[] inputs, float[] target)> Data = new List<(float[] inputs, float[] target)>();
 
         public Network() { }
-        
+
         public Network(int inputs, int neurons, int layers, int outputs, ActivationType hidden, ActivationType output, float range = 2)
         {
             Hidden = Enumerable.Repeat(neurons, layers).Select(n => new Neuron[n]).ToArray();
@@ -26,10 +26,10 @@ namespace NeuralNetwork
         public Network(string file)
         {
             var json = File.ReadAllText($"{file}.json");
-            var x = JsonSerializer.Deserialize<Network>(json);
-            Hidden = x.Hidden;
-            Output = x.Output;
-            Loss = x.Loss;
+            var data = JsonSerializer.Deserialize<Network>(json);
+            Hidden = data.Hidden;
+            Output = data.Output;
+            Loss = data.Loss;
         }
 
         public void Fit(params (float[] inputs, float[] target)[] data)
@@ -40,25 +40,14 @@ namespace NeuralNetwork
 
         public float[] Predict(params float[] inputs)
         {
-            foreach (var l in Hidden)
+            foreach (var layer in Hidden)
             {
-                Array.ForEach(l, n => n.Update(inputs));
-                inputs = l.Select(n => n.Output).ToArray();
+                Array.ForEach(layer, n => n.Update(inputs));
+                inputs = layer.Select(n => n.Output).ToArray();
             }
             Array.ForEach(Output, o => o.Update(inputs));
-            inputs = Output.Select(o => o.Output).ToArray();
 
-            // if (Output[0].Function == ActivationType.ArgMax)
-            //     inputs = ArgMax(inputs);
-            // else if (Output[0].Function == ActivationType.SoftMax)
-            // {
-            //     inputs = SoftMax(inputs);
-            //     var dresult = dSoftmax(inputs);
-            //     for (int i = 0; i < Output.Length; i++)
-            //         Output[i].Derivative = dresult[i];
-            // }
-
-            return inputs;
+            return Output.Select(o => o.Output).ToArray();
         }
 
         public void Learn(int epochs = 10000, float rate = 0.01f, float error = 0.1f)
@@ -95,26 +84,6 @@ namespace NeuralNetwork
             }
         }
 
-        // public void Reward()
-        // {
-        //     float[] outputs = new float[10];
-        //     var discount = 0.9f;
-        //     var reward = 1;
-
-        //     int action = Array.IndexOf(outputs, outputs.Max());
-        //     float target = reward + discount * outputs[action];
-
-        //     // Calculate the loss using Mean Squared Error
-        //     float loss = 0;
-        //     loss += (target - outputs[action]) * (target - outputs[action]);
-
-        //     // Backpropagation
-        //     var gradient = -2 * (target - outputs[action]);
-
-        //     outputs[action].error = gradient;
-        //     outputs[action].Adjust();
-        // }
-
         public void Save(string name)
         {
             var options = new JsonSerializerOptions
@@ -123,8 +92,8 @@ namespace NeuralNetwork
                 IgnoreReadOnlyFields = true,
                 WriteIndented = true
             };
-            var x = JsonSerializer.Serialize<Network>(this, options);
-            File.WriteAllText($"{name}.json", x);
+            var data = JsonSerializer.Serialize<Network>(this, options);
+            File.WriteAllText($"{name}.json", data);
         }
 
         public void Regularize(float offset = 0.01f)
@@ -158,6 +127,7 @@ namespace NeuralNetwork
             public float Derivative;
 
             public Neuron() { }
+
             public Neuron(int inputs, ActivationType function, float range = 2)
             {
                 Function = function;
@@ -172,6 +142,7 @@ namespace NeuralNetwork
                 Output = Activation(Raw);
                 Derivative = dActivation(Output);
             }
+
             public void Adjust(float rate = 0.01f)
             {
                 Bias -= rate * Error * Derivative;
@@ -179,6 +150,7 @@ namespace NeuralNetwork
                     Weight[i] -= rate * Error * Derivative * Input[i];
                 Error = 0;
             }
+
             public void Regularize(float offset = 0.01f)
             {
                 Bias *= 1 - offset;
@@ -200,6 +172,7 @@ namespace NeuralNetwork
                 }
                 return Abs(x, target);
             }
+
             public static float dLoss(float x, float target, LossType loss)
             {
                 switch (loss)
@@ -238,6 +211,7 @@ namespace NeuralNetwork
                 }
                 return x;
             }
+            
             float dActivation(float x)
             {
                 switch (Function)
@@ -266,27 +240,6 @@ namespace NeuralNetwork
             static float dTanh(float x) => (float)(1f - Math.Pow(Math.Tanh(x), 2));
             static float ArcTan(float x) => (float)Math.Atan(x);
             static float dArcTan(float x) => (float)(1f / (1f + Math.Pow(x, 2)));
-            public static float[] ArgMax(float[] x)
-            {
-                var max = Array.IndexOf(x, x.Max());
-                return x.Select((y, i) => i == max ? 1f : 0f).ToArray();
-            }
-            public static float[] dArgMax(float[] x) => x.Select(y => 1f).ToArray();
-            public static float[] SoftMax(float[] x)
-            {
-                var max = x.Max();
-                var sum = x.Sum(val => Math.Exp(val - max));
-                return x.Select(val => (float)(Math.Exp(val - max) / sum)).ToArray();
-            }
-            public static float[] dSoftmax(float[] x)
-            {
-                // var dsoftmax = new float[x.Length];
-                // for (int i = 0; i < x.Length; i++)
-                //     for (int j = 0; j < x.Length; j++)
-                //         dsoftmax[i] += x[i] * (i == j ? 1f : 0f - x[j]);
-                var check = (int i, int j) => x[i] * (i == j ? 1f : 0f - x[j]);
-                return x.Select((_, i) => x.Select((_, j) => check(i, j)).Sum()).ToArray();
-            }
 
             static readonly Random Seed = new Random();
             static float Rnd(float min, float max) => Seed.NextSingle() * Math.Abs(max - min) + min;
