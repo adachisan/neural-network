@@ -4,7 +4,7 @@
 using NeuralNetwork;
 using static NeuralNetwork.Network.Neuron;
 
-var data = new List<(float[], float[])>
+var data = new (float[], float[])[]
 {
     (new [] { 0f }, new [] { 0f }),
     (new [] { 0.125f }, new [] { 1f }),

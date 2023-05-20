@@ -22,6 +22,7 @@ namespace NeuralNetwork
                     Hidden[l][n] = new Neuron((l == 0) ? inputs : neurons, hidden, range);
             Output = Enumerable.Range(0, outputs).Select(o => new Neuron(neurons, output, range)).ToArray();
         }
+
         public Network(string file)
         {
             var json = File.ReadAllText($"{file}.json");
@@ -31,17 +32,10 @@ namespace NeuralNetwork
             Loss = x.Loss;
         }
 
-        public void Fit(float[] inputs, float[] target)
+        public void Fit(params (float[] inputs, float[] target)[] data)
         {
-            Data.Add((inputs, target));
-        }
-        public void Fit(List<(float[] inputs, float[] target)> data)
-        {
-            Data = data;
-        }
-        public void Fit(string file)
-        {
-
+            foreach (var item in data)
+                Data.Add(item);
         }
 
         public float[] Predict(params float[] inputs)
@@ -65,11 +59,6 @@ namespace NeuralNetwork
             // }
 
             return inputs;
-        }
-        public float[] Predict(string file)
-        {
-
-            return Array.Empty<float>();
         }
 
         public void Learn(int epochs = 10000, float rate = 0.01f, float error = 0.1f)
