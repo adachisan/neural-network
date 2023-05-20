@@ -5,4 +5,5 @@ obj/
 *.txt
 *.log
 config.*
+data.*
 !README.txt
