@@ -1,9 +1,10 @@
 namespace NeuralNetwork
 {
+    using System.Reflection;
     using System.Text;
     using System.Text.Json;
     using static Network.Neuron;
-    
+
     public class Network
     {
         public Neuron[][] Hidden { get; set; }
@@ -50,9 +51,9 @@ namespace NeuralNetwork
             return Output.Select(o => o.Output).ToArray();
         }
 
-        public void Learn(int epochs = 10000, float rate = 0.01f, float error = 0.1f)
+        public void Learn(int maxEpochs = 10000, float rate = 0.01f, float errorLimit = 0.1f)
         {
-            for (int e = 1; e <= epochs; e++)
+            for (int epoch = 1; epoch <= maxEpochs; epoch++)
             {
                 Loss = 0;
 
@@ -62,10 +63,10 @@ namespace NeuralNetwork
                     for (int o = 0; o < Output.Length; o++)
                     {
                         //Calculating error
-                        Loss += Neuron.Loss(result[o], item.target[o], LossType.Abs) / Output.Length;
+                        Loss += Neuron.Loss(result[o], item.target[o]) / Output.Length;
 
                         //Backpropagation
-                        Output[o].Error = Neuron.dLoss(result[o], item.target[o], LossType.Abs);
+                        Output[o].Error = Neuron.dLoss(result[o], item.target[o]);
                         for (int l = Hidden.Length - 1; l >= 0; l--)
                             for (int n = 0; n < Hidden[0].Length; n++)
                                 Hidden[l][n].Error = (l == Hidden.Length - 1) ? Output[o].Error * Output[o].Weight[n]
@@ -78,9 +79,9 @@ namespace NeuralNetwork
                 }
 
                 Loss /= Data.Count;
-                Epochs = $"{e}/{epochs}";
+                Epochs = $"{epoch}/{maxEpochs}";
 
-                if (Loss <= error || e >= epochs) return;
+                if (Loss <= errorLimit || epoch >= maxEpochs) return;
             }
         }
 
@@ -125,6 +126,8 @@ namespace NeuralNetwork
             public float Raw;
             public float Output;
             public float Derivative;
+            private MethodInfo afunc;
+            private MethodInfo dfunc;
 
             public Neuron() { }
 
@@ -158,42 +161,17 @@ namespace NeuralNetwork
                     Weight[i] *= 1 - offset;
             }
 
-            public enum LossType { Abs, MSE, CE, BCE }
-            public static float Loss(float x, float target, LossType loss)
+            public static float Loss(float x, float target)
             {
-                switch (loss)
-                {
-                    case LossType.MSE:
-                        return MSE(x, target);
-                    case LossType.CE:
-                        return CE(x, target);
-                    case LossType.BCE:
-                        return BCE(x, target);
-                }
-                return Abs(x, target);
+                return (float)Math.Sqrt(Math.Abs(target - x));
             }
 
-            public static float dLoss(float x, float target, LossType loss)
+            public static float dLoss(float x, float target)
             {
-                switch (loss)
-                {
-                    case LossType.CE:
-                        return dCE(x, target);
-                    case LossType.BCE:
-                        return dBCE(x, target);
-                }
-                return dMSE(x, target);
+                return 2 * (x - target);
             }
 
-            public static float Abs(float x, float target) => (float)Math.Sqrt(Math.Abs(target - x));
-            public static float MSE(float x, float target) => (target - x) * (target - x);
-            public static float dMSE(float x, float target) => 2 * (x - target);
-            public static float CE(float x, float target) => -(float)(target * Math.Log(x));
-            public static float dCE(float x, float target) => -(target / x);
-            public static float BCE(float x, float target) => -(float)(target * Math.Log(x) + (1 - target) * Math.Log(1 - x));
-            public static float dBCE(float x, float target) => -(target / x) + (1 - target) / (1 - x);
-
-            public enum ActivationType { None, Sigmoid, Tanh, ReLU, SoftPlus, ArcTan, ArgMax, SoftMax }
+            public enum ActivationType { None, Sigmoid, Tanh, ReLU, SoftPlus, ArcTan }
             float Activation(float x)
             {
                 switch (Function)
@@ -211,7 +189,7 @@ namespace NeuralNetwork
                 }
                 return x;
             }
-            
+
             float dActivation(float x)
             {
                 switch (Function)
@@ -236,8 +214,8 @@ namespace NeuralNetwork
             static float dSigmoid(float x) => Sigmoid(x) * (1f - Sigmoid(x));
             static float SoftPlus(float x) => (float)Math.Log(1f + Math.Exp(x));
             static float dSoftPlus(float x) => (float)(Math.Exp(x) / (1f + Math.Exp(x)));
-            static float Tanh(float x) => (float)Math.Tanh(x);
-            static float dTanh(float x) => (float)(1f - Math.Pow(Math.Tanh(x), 2));
+            public static float Tanh(float x) => (float)Math.Tanh(x);
+            public static float dTanh(float x) => (float)(1f - Math.Pow(Math.Tanh(x), 2));
             static float ArcTan(float x) => (float)Math.Atan(x);
             static float dArcTan(float x) => (float)(1f / (1f + Math.Pow(x, 2)));
 
