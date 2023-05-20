@@ -1,7 +1,8 @@
 ﻿// https://playground.tensorflow.org/
 // https://csv2chart.com/
 
-using static Neural.Neuron;
+using NeuralNetwork;
+using static NeuralNetwork.Network.Neuron;
 
 var data = new List<(float[], float[])>
 {
@@ -20,7 +21,7 @@ var avg = 0f;
 var count = 0f;
 Parallel.For(0, 99, (i, s) =>
 {
-    var x = new Neural(1, 10, 2, 1, ActivationType.Tanh, ActivationType.None, 2);
+    var x = new Network(1, 10, 2, 1, ActivationType.Tanh, ActivationType.None, 2);
     x.Fit(data);
 
     if (!s.IsStopped)
@@ -40,5 +41,5 @@ Parallel.For(0, 99, (i, s) =>
 
 Console.WriteLine($"Average_loss: {avg / count:n2}");
 
-var x = new Neural("data");
+var x = new Network("data");
 x.Draw("data");
