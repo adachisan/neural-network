@@ -1,10 +1,10 @@
 namespace NeuralNetwork
 {
-    using System.Reflection;
     using System.Text;
     using System.Text.Json;
     using static Network.Neuron;
 
+    // https://playground.tensorflow.org/
     public class Network
     {
         public Neuron[][] Hidden { get; set; }
@@ -102,6 +102,7 @@ namespace NeuralNetwork
             Array.ForEach(Hidden, l => Array.ForEach(l, n => n.Regularize(offset)));
         }
 
+        // https://csv2chart.com/
         public void Draw(string file)
         {
             var csv = new StringBuilder();
@@ -118,6 +119,7 @@ namespace NeuralNetwork
 
         public class Neuron
         {
+            public enum ActivationType { None, Sigmoid, Tanh, ReLU, SoftPlus, ArcTan }
             public ActivationType Function { get; set; }
             public float Bias { get; set; } = 0;
             public float[] Weight { get; set; }
@@ -126,13 +128,14 @@ namespace NeuralNetwork
             public float Raw;
             public float Output;
             public float Derivative;
-            private MethodInfo afunc;
-            private MethodInfo dfunc;
 
             public Neuron() { }
 
             public Neuron(int inputs, ActivationType function, float range = 2)
             {
+                var Seed = new Random();
+                var Rnd = (float min, float max)
+                    => Seed.NextSingle() * Math.Abs(max - min) + min;
                 Function = function;
                 Weight = Enumerable.Range(0, inputs)
                     .Select(i => Rnd(-range, range)).ToArray();
@@ -142,8 +145,8 @@ namespace NeuralNetwork
             {
                 Input = input ?? Input;
                 Raw = Input.Zip(Weight, (a, b) => a * b).Sum() + Bias;
-                Output = Activation(Raw);
-                Derivative = dActivation(Output);
+                Output = Activation($"{Function}", Raw);
+                Derivative = Activation($"d{Function}", Output);
             }
 
             public void Adjust(float rate = 0.01f)
@@ -161,86 +164,28 @@ namespace NeuralNetwork
                     Weight[i] *= 1 - offset;
             }
 
-            public static float Loss(float x, float target)
-            {
-                return (float)Math.Sqrt(Math.Abs(target - x));
-            }
-
-            public static float dLoss(float x, float target)
-            {
-                return 2 * (x - target);
-            }
-
-            public enum ActivationType { None, Sigmoid, Tanh, ReLU, SoftPlus, ArcTan }
-            float Activation(float x)
+            float Activation(string name, float x)
             {
                 if (Function == ActivationType.None) return x;
-                afunc ??= this.GetType().GetMethod($"{Function}");
-                return (float)afunc.Invoke(this, new object[] { x });
-
-                // switch (Function)
-                // {
-                //     case ActivationType.Sigmoid:
-                //         return Sigmoid(x);
-                //     case ActivationType.Tanh:
-                //         return Tanh(x);
-                //     case ActivationType.ReLU:
-                //         return ReLU(x);
-                //     case ActivationType.SoftPlus:
-                //         return SoftPlus(x);
-                //     case ActivationType.ArcTan:
-                //         return ArcTan(x);
-                // }
-                // return x;
+                var method = this.GetType().GetMethod(name);
+                return (float)method.Invoke(this, new object[] { x });
             }
 
-            float dActivation(float x)
-            {
-                if (Function == ActivationType.None) return 1;
-                dfunc ??= this.GetType().GetMethod($"d{Function}");
-                return (float)dfunc.Invoke(this, new object[] { x });
+            //Loss functions
+            public static float Loss(float x, float target) => (float)Math.Sqrt(Math.Abs(target - x));
+            public static float dLoss(float x, float target) => 2 * (x - target);
 
-                // switch (Function)
-                // {
-                //     case ActivationType.Sigmoid:
-                //         return dSigmoid(x);
-                //     case ActivationType.Tanh:
-                //         return dTanh(x);
-                //     case ActivationType.ReLU:
-                //         return dReLU(x);
-                //     case ActivationType.SoftPlus:
-                //         return dSoftPlus(x);
-                //     case ActivationType.ArcTan:
-                //         return dArcTan(x);
-                // }
-                // return 1;
-            }
-
-            static float ReLU(float x) => x <= 0f ? 0.01f * x : x;
-            static float dReLU(float x) => x < 0f ? 0f : 1f;
-            static float Sigmoid(float x) => (float)(1f / (1f + Math.Exp(-x)));
-            static float dSigmoid(float x) => Sigmoid(x) * (1f - Sigmoid(x));
-            static float SoftPlus(float x) => (float)Math.Log(1f + Math.Exp(x));
-            static float dSoftPlus(float x) => (float)(Math.Exp(x) / (1f + Math.Exp(x)));
+            //Activation functions
+            public static float ReLU(float x) => x <= 0f ? 0.01f * x : x;
+            public static float dReLU(float x) => x < 0f ? 0f : 1f;
+            public static float Sigmoid(float x) => (float)(1f / (1f + Math.Exp(-x)));
+            public static float dSigmoid(float x) => Sigmoid(x) * (1f - Sigmoid(x));
+            public static float SoftPlus(float x) => (float)Math.Log(1f + Math.Exp(x));
+            public static float dSoftPlus(float x) => (float)(Math.Exp(x) / (1f + Math.Exp(x)));
             public static float Tanh(float x) => (float)Math.Tanh(x);
             public static float dTanh(float x) => (float)(1f - Math.Pow(Math.Tanh(x), 2));
-            static float ArcTan(float x) => (float)Math.Atan(x);
-            static float dArcTan(float x) => (float)(1f / (1f + Math.Pow(x, 2)));
-
-            static readonly Random Seed = new Random();
-            static float Rnd(float min, float max) => Seed.NextSingle() * Math.Abs(max - min) + min;
-        }
-
-    }
-
-    public static class Extension
-    {
-        public static float Normalize(this float x, float max, float min) => (x - min) / (max - min);
-        public static float Denormalize(this float x, float max, float min) => x * (max - min) + min;
-        public static float Decay(this float start, float end, float max, float min)
-        {
-            var t = (start > end) ? end / start : start / end;
-            return (1 - t) * max + t * min;
+            public static float ArcTan(float x) => (float)Math.Atan(x);
+            public static float dArcTan(float x) => (float)(1f / (1f + Math.Pow(x, 2)));
         }
     }
 }
