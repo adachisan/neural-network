@@ -47,7 +47,6 @@ namespace NeuralNetwork
                 inputs = layer.Select(n => n.Output).ToArray();
             }
             Array.ForEach(Output, o => o.Update(inputs));
-
             return Output.Select(o => o.Output).ToArray();
         }
 
@@ -56,7 +55,6 @@ namespace NeuralNetwork
             for (int epoch = 1; epoch <= maxEpochs; epoch++)
             {
                 Loss = 0;
-
                 foreach (var item in Data)
                 {
                     var result = Predict(item.inputs);
@@ -77,10 +75,8 @@ namespace NeuralNetwork
                         Array.ForEach(Hidden, l => Array.ForEach(l, n => n.Adjust(rate)));
                     }
                 }
-
                 Loss /= Data.Count;
                 Epochs = $"{epoch}/{maxEpochs}";
-
                 if (Loss <= errorLimit || epoch >= maxEpochs) return;
             }
         }
@@ -166,7 +162,6 @@ namespace NeuralNetwork
 
             float Activation(string name, float x)
             {
-                if (Function == ActivationType.None) return x;
                 var method = this.GetType().GetMethod(name);
                 return (float)method.Invoke(this, new object[] { x });
             }
@@ -176,6 +171,8 @@ namespace NeuralNetwork
             public static float dLoss(float x, float target) => 2 * (x - target);
 
             //Activation functions
+            public static float None(float x) => x;
+            public static float dNone(float x) => 1;
             public static float ReLU(float x) => x <= 0f ? 0.01f * x : x;
             public static float dReLU(float x) => x < 0f ? 0f : 1f;
             public static float Sigmoid(float x) => (float)(1f / (1f + Math.Exp(-x)));
