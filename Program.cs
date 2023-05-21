@@ -1,7 +1,4 @@
-﻿// https://playground.tensorflow.org/
-// https://csv2chart.com/
-
-using NeuralNetwork;
+﻿using NeuralNetwork;
 using static NeuralNetwork.Network.Neuron;
 
 var data = new (float[], float[])[]
