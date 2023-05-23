@@ -1,5 +1,6 @@
 namespace NeuralNetwork
 {
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.Json;
     using static Network.Neuron;
@@ -15,7 +16,7 @@ namespace NeuralNetwork
 
         public Network() { }
 
-        public Network(int inputs, int neurons, int layers, int outputs, ActivationType hidden, ActivationType output, float range = 2)
+        public Network(int inputs, int neurons, int layers, int outputs, Activation hidden, Activation output, float range = 2)
         {
             Hidden = Enumerable.Repeat(neurons, layers).Select(n => new Neuron[n]).ToArray();
             for (int l = 0; l < layers; l++)
@@ -115,8 +116,8 @@ namespace NeuralNetwork
 
         public class Neuron
         {
-            public enum ActivationType { None, Sigmoid, Tanh, ReLU, SoftPlus, ArcTan }
-            public ActivationType Function { get; set; }
+            public enum Activation { None, Sigmoid, Tanh, ReLU, SoftPlus, ArcTan }
+            public Activation Function { get; set; }
             public float Bias { get; set; } = 0;
             public float[] Weight { get; set; }
             public float[] Input;
@@ -126,11 +127,8 @@ namespace NeuralNetwork
 
             public Neuron() { }
 
-            public Neuron(int inputs, ActivationType function, float range = 2)
+            public Neuron(int inputs, Activation function, float range = 2)
             {
-                var Seed = new Random();
-                var Rnd = (float min, float max)
-                    => Seed.NextSingle() * Math.Abs(max - min) + min;
                 Function = function;
                 Weight = Enumerable.Range(0, inputs)
                     .Select(i => Rnd(-range, range)).ToArray();
@@ -140,8 +138,8 @@ namespace NeuralNetwork
             {
                 Input = input ?? Input;
                 Output = Input.Zip(Weight, (a, b) => a * b).Sum() + Bias;
-                Output = Activation($"{Function}", Output);
-                Derivative = Activation($"d{Function}", Output);
+                Output = GetFunction($"{Function}", Output);
+                Derivative = GetFunction($"d{Function}", Output);
             }
 
             public void Adjust(float rate = 0.01f)
@@ -159,11 +157,15 @@ namespace NeuralNetwork
                     Weight[i] *= 1 - offset;
             }
 
-            float Activation(string name, float x)
+            private float GetFunction(string name, float x)
             {
                 var method = this.GetType().GetMethod(name);
                 return (float)method.Invoke(this, new object[] { x });
             }
+
+            //Static functions
+            private static Random Seed = new Random();
+            public static float Rnd(float min, float max) => Seed.NextSingle() * Math.Abs(max - min) + min;
 
             //Loss functions
             public static float Loss(float x, float target) => (float)Math.Sqrt(Math.Abs(target - x));

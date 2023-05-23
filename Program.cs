@@ -18,7 +18,7 @@ var avg = 0f;
 var count = 0f;
 Parallel.For(0, 99, (i, s) =>
 {
-    var x = new Network(1, 10, 2, 1, ActivationType.Tanh, ActivationType.None, 2);
+    var x = new Network(1, 10, 2, 1, Activation.Tanh, Activation.None, 2);
     x.Fit(data);
 
     if (!s.IsStopped)
