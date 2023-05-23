@@ -121,7 +121,6 @@ namespace NeuralNetwork
             public float[] Weight { get; set; }
             public float[] Input;
             public float Error;
-            public float Raw;
             public float Output;
             public float Derivative;
 
@@ -140,8 +139,8 @@ namespace NeuralNetwork
             public void Update(float[] input = null)
             {
                 Input = input ?? Input;
-                Raw = Input.Zip(Weight, (a, b) => a * b).Sum() + Bias;
-                Output = Activation($"{Function}", Raw);
+                Output = Input.Zip(Weight, (a, b) => a * b).Sum() + Bias;
+                Output = Activation($"{Function}", Output);
                 Derivative = Activation($"d{Function}", Output);
             }
 
