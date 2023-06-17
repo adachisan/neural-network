@@ -1,6 +1,5 @@
 namespace NeuralNetwork
 {
-    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.Json;
     using static Network.Neuron;
@@ -16,13 +15,13 @@ namespace NeuralNetwork
 
         public Network() { }
 
-        public Network(int inputs, int neurons, int layers, int outputs, Activation hidden, Activation output, float range = 2)
+        public Network(int inputs, int neurons, int layers, int outputs, Activation hidden, float range = 2)
         {
             Hidden = Enumerable.Repeat(neurons, layers).Select(n => new Neuron[n]).ToArray();
             for (int l = 0; l < layers; l++)
                 for (int n = 0; n < neurons; n++)
                     Hidden[l][n] = new Neuron((l == 0) ? inputs : neurons, hidden, range);
-            Output = Enumerable.Range(0, outputs).Select(o => new Neuron(neurons, output, range)).ToArray();
+            Output = Enumerable.Range(0, outputs).Select(o => new Neuron(neurons, Activation.None, range)).ToArray();
         }
 
         public Network(string file)
