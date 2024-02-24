@@ -14,29 +14,27 @@ var data = new (float[], float[])[]
     (new [] { 1f }, new [] { 0f })
 };
 
-var avg = 0f;
-var count = 0f;
-Parallel.For(0, 99, (i, s) =>
+var results = GetResults(50);
+Task.WaitAll(results.ToArray());
+results.Sort((a, b) => a.Result.Loss.CompareTo(b.Result.Loss));
+for (var i = 0; i < 5; i++)
 {
-    var x = new Network(1, 10, 2, 1, Activation.Tanh, Activation.None, 2);
-    x.Fit(data);
+    var x = results[i].Result;
+    Console.WriteLine($"{x.Epochs} {x.Loss}");
+    x.Draw($"test[{i}]");
+}
 
-    if (!s.IsStopped)
+
+List<Task<Network>> GetResults(int len)
+{
+    return new Task<Network>[len].Select((task, i) =>
     {
-        x.Learn();
-        avg += x.Loss;
-        count++;
-        if (x.Loss < 0.1f)
+        return Task.Run(() =>
         {
-            Console.WriteLine($"=> [{i}] {x.Epochs} {x.Loss:n2}");
-            x.Save("data");
-            s.Stop();
-        }
-        else Console.WriteLine($"[{i}] {x.Epochs} {x.Loss:n2}");
-    }
-});
-
-Console.WriteLine($"Average_loss: {avg / count:n2}");
-
-var x = new Network("data");
-x.Draw("data");
+            var x = new Network(1, 10, 2, 1, Activation.ArcTan, 2);
+            x.Fit(data);
+            x.Learn();
+            return x;
+        });
+    }).ToList();
+}

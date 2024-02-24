@@ -11,7 +11,7 @@ namespace NeuralNetwork
         public Neuron[] Output { get; set; }
         public float Loss { get; set; }
         public string Epochs { get; set; }
-        List<(float[] inputs, float[] target)> Data = new List<(float[] inputs, float[] target)>();
+        readonly List<(float[] inputs, float[] target)> Data = new List<(float[] inputs, float[] target)>();
 
         public Network() { }
 
@@ -163,7 +163,7 @@ namespace NeuralNetwork
             }
 
             //Static functions
-            private static Random Seed = new Random();
+            private static readonly Random Seed = new Random();
             public static float Rnd(float min, float max) => Seed.NextSingle() * Math.Abs(max - min) + min;
 
             //Loss functions
